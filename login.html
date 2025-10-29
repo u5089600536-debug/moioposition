@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login y Registro</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #222 0%, #000 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+
+    .container {
+        background: #111;
+        padding: 40px 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(255, 255, 0, 0.3);
+        width: 400px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center; /* CENTRADO VERTICAL */
+    }
+
+    h2 {
+        color: #FFD700;
+        text-align: center;
+        margin-bottom: 30px;
+        font-size: 28px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    input {
+        width: 100%;
+        padding: 12px;
+        margin: 10px 0;
+        border-radius: 8px;
+        border: 1px solid #FFD700;
+        background: #222;
+        color: #fff;
+        font-size: 16px;
+        transition: 0.3s;
+    }
+    input:focus {
+        border-color: #ffea00;
+        box-shadow: 0 0 5px #FFD700;
+        outline: none;
+    }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: 0.3s;
+    }
+    button.login {
+        background: #FFD700;
+        color: #111;
+    }
+    button.login:hover {
+        background: #e6c200;
+        transform: translateY(-2px);
+    }
+    button.register {
+        background: #111;
+        color: #FFD700;
+        border: 2px solid #FFD700;
+        
+    }
+    button.register:hover {
+        background: #FFD700;
+        color: #111;
+        transform: translateY(-2px);
+    }
+
+    .error {
+        color: #ff4c4c;
+        font-size: 0.9em;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+    .success {
+        color: #00ff7f;
+        font-size: 0.9em;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    .link {
+        text-align: center;
+        margin-top: 12px;
+        font-size: 0.9em;
+        color: #FFD700;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    .link:hover {
+        color: #fff;
+        text-decoration: underline;
+    }
+
+    .form-group {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Centrar verticalmente los inputs dentro del formulario */
+    .form-inner {
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Centrado vertical */
+        width: 100%;
+    }
+</style>
+  </head>
+  <body>
+    <div class="container">
+      <h2 id="formTitle">Login</h2>
+      <div class="error" id="errorMessage"></div>
+      <div class="success" id="successMessage"></div>
+
+      <!-- Login -->
+      <div id="loginForm">
+        <input type="email" id="loginEmail" placeholder="Email" />
+        <input type="password" id="loginPassword" placeholder="Contraseña" />
+        <button class="login" id="loginBtn">Iniciar Sesión</button>
+        <div class="link" id="showRegister">¿No tienes cuenta? Registrarse</div>
+      </div>
+
+      <!-- Registro -->
+      <div id="registerForm" style="display: none">
+        <input type="text" id="registerName" placeholder="Nombre" />
+        <input type="email" id="registerEmail" placeholder="Email" />
+        <input type="password" id="registerPassword" placeholder="Contraseña" />
+        <button class="register" id="registerBtn">Registrarse</button>
+        <div class="link" id="showLogin">¿Ya tienes cuenta? Iniciar Sesión</div>
+      </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <script>
+      // Configura tu Firebase aquí
+      const firebaseConfig = {
+        apiKey: "TU_API_KEY",
+        authDomain: "TU_AUTH_DOMAIN",
+        projectId: "TU_PROJECT_ID",
+        storageBucket: "TU_STORAGE_BUCKET",
+        messagingSenderId: "TU_MESSAGING_SENDER_ID",
+        appId: "TU_APP_ID",
+      };
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+
+      // Elementos
+      const loginForm = document.getElementById("loginForm");
+      const registerForm = document.getElementById("registerForm");
+      const showRegister = document.getElementById("showRegister");
+      const showLogin = document.getElementById("showLogin");
+      const formTitle = document.getElementById("formTitle");
+      const errorMessage = document.getElementById("errorMessage");
+      const successMessage = document.getElementById("successMessage");
+
+      // Mostrar registro
+      showRegister.addEventListener("click", () => {
+        loginForm.style.display = "none";
+        registerForm.style.display = "block";
+        formTitle.textContent = "Registro";
+        errorMessage.textContent = "";
+        successMessage.textContent = "";
+      });
+
+      // Mostrar login
+      showLogin.addEventListener("click", () => {
+        loginForm.style.display = "block";
+        registerForm.style.display = "none";
+        formTitle.textContent = "Login";
+        errorMessage.textContent = "";
+        successMessage.textContent = "";
+      });
+
+      // Registro
+      document
+        .getElementById("registerBtn")
+        .addEventListener("click", async () => {
+          errorMessage.textContent = "";
+          successMessage.textContent = "";
+          const nombre = document.getElementById("registerName").value.trim();
+          const email = document.getElementById("registerEmail").value.trim();
+          const password = document.getElementById("registerPassword").value;
+
+          if (!nombre || !email || !password) {
+            errorMessage.textContent = "Completa todos los campos.";
+            return;
+          }
+
+          try {
+            const userRef = db.collection("usuarios");
+            const snapshot = await userRef.where("email", "==", email).get();
+
+            if (!snapshot.empty) {
+              errorMessage.textContent = "El email ya está registrado.";
+              return;
+            }
+
+            await userRef.add({ nombre, email, password });
+            successMessage.textContent =
+              "Usuario registrado correctamente. Redirigiendo al login...";
+
+            setTimeout(() => {
+              loginForm.style.display = "block";
+              registerForm.style.display = "none";
+              formTitle.textContent = "Login";
+              errorMessage.textContent = "";
+              successMessage.textContent = "";
+            }, 2000);
+
+            document.getElementById("registerName").value = "";
+            document.getElementById("registerEmail").value = "";
+            document.getElementById("registerPassword").value = "";
+          } catch (error) {
+            console.error(error);
+            errorMessage.textContent =
+              "Error al conectarse con la base de datos.";
+          }
+        });
+
+      // Login
+      document
+        .getElementById("loginBtn")
+        .addEventListener("click", async () => {
+          errorMessage.textContent = "";
+          successMessage.textContent = "";
+          const email = document.getElementById("loginEmail").value.trim();
+          const password = document.getElementById("loginPassword").value;
+
+          if (!email || !password) {
+            errorMessage.textContent = "Completa todos los campos.";
+            return;
+          }
+
+          try {
+            const userRef = db.collection("usuarios");
+            const snapshot = await userRef
+              .where("email", "==", email)
+              .where("password", "==", password)
+              .get();
+
+            if (!snapshot.empty) {
+              // Login correcto, redirigir a index.html
+              window.location.href = "index.html";
+            } else {
+              errorMessage.textContent =
+                "Usuario no existe o contraseña incorrecta.";
+            }
+          } catch (error) {
+            console.error(error);
+            errorMessage.textContent =
+              "Error al conectarse con la base de datos.";
+          }
+        });
+    </script>
+  </body>
+</html>
